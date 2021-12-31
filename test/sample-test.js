@@ -1,19 +1,32 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("Greeter", function () {
-  it("Should return the new greeting once it's changed", async function () {
-    const Greeter = await ethers.getContractFactory("Greeter");
-    const greeter = await Greeter.deploy("Hello, world!");
-    await greeter.deployed();
+describe("Contract upgraded", function () {
+  it("works", async () => {
+    const ContractV1 = await ethers.getContractFactory("ContractV1");
+    const ContractV2 = await ethers.getContractFactory("ContractV2");
 
-    expect(await greeter.greet()).to.equal("Hello, world!");
+    const instance = await upgrades.deployProxy(ContractV1, [
+      "Hello, Hardhat!",
+    ]);
 
-    const setGreetingTx = await greeter.setGreeting("Hola, mundo!");
+    let greet = await instance.greet();
+    expect(greet.toString()).to.equal("Hello, Hardhat!");
 
-    // wait until the transaction is mined
-    await setGreetingTx.wait();
+    instance.setGreeting("Hello, Leo Pham!");
+    greet = await instance.greet();
+    expect(greet.toString()).to.equal("Hello, Leo Pham!");
 
-    expect(await greeter.greet()).to.equal("Hola, mundo!");
+    const upgraded = await upgrades.upgradeProxy(instance.address, ContractV2);
+
+    [greet, time] = await upgraded.greet();
+    console.log(`updateTime: ${time}`);
+    expect(greet.toString()).to.equal("Hello, Leo Pham!");
+
+    upgraded.setGreeting("Hello, Leo Pham upgraded!");
+
+    [greet, time] = await upgraded.greet();
+    console.log(`updateTime: ${time}`);
+    expect(greet.toString()).to.equal("Hello, Leo Pham upgraded!");
   });
 });

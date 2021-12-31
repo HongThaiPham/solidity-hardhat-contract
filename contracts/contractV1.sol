@@ -1,12 +1,13 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "hardhat/console.sol";
 
-contract Greeter {
+contract ContractV1 is Initializable {
     string private greeting;
 
-    constructor(string memory _greeting) {
+    function initialize(string memory _greeting) public initializer {
         console.log("Deploying a Greeter with greeting:", _greeting);
         greeting = _greeting;
     }
