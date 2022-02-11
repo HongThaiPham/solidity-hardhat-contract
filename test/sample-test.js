@@ -23,7 +23,7 @@ describe("Transactions", function () {
     poolContract = await PoolContract.deploy(
       cryptoHeroesToken.address,
       dev.address,
-      1000
+      100
     );
 
     await cryptoHeroesToken.transferOwnership(poolContract.address);
@@ -40,12 +40,6 @@ describe("Transactions", function () {
     });
   });
 
-  // describe("transferOwnership", function () {
-  //   it("Should change ownership to poolContract", async function () {
-  //     await cryptoHeroesToken.transferOwnership(poolContract.address);
-  //     expect(await cryptoHeroesToken.owner()).to.equal(poolContract.address);
-  //   });
-  // });
   describe("Real case", function () {
     it("should add new pool", async () => {
       await poolContract.addPool(
@@ -57,6 +51,7 @@ describe("Transactions", function () {
       );
       expect(await poolContract.poolLength()).to.equal(1);
     });
+
     it("should can deposit and withdraw", async () => {
       await poolContract.addPool(
         2000,
@@ -66,14 +61,40 @@ describe("Transactions", function () {
         nftToken.address
       );
 
+      // chuyển lptoken cho alice, alice có lp
       await lpToken.transfer(alice.address, 2000);
       expect(await lpToken.balanceOf(alice.address)).to.equal(2000);
+
+      await lpToken.transfer(bob.address, 2000);
+      expect(await lpToken.balanceOf(bob.address)).to.equal(2000);
+
+      // alice approve lptoken vào pool
       await lpToken.connect(alice).approve(poolContract.address, 1000);
+      await lpToken.connect(bob).approve(poolContract.address, 1000);
+
+      // alice chưa có heroes token
       expect(await cryptoHeroesToken.balanceOf(alice.address)).to.equal(0);
-      await poolContract.connect(alice).deposit(0, 100);
-      expect(await lpToken.balanceOf(alice.address)).to.equal(1900);
-      await poolContract.connect(alice).withdraw(0, 100);
-      console.log(await cryptoHeroesToken.balanceOf(alice.address));
+      expect(await cryptoHeroesToken.balanceOf(bob.address)).to.equal(0);
+
+      // alice chuyển lptoken vào pool
+
+      await poolContract.connect(alice).deposit(0, 200);
+      // expect(await lpToken.balanceOf(alice.address)).to.equal(1900);
+      // expect(await lpToken.balanceOf(poolContract.address)).to.equal(100);
+
+      await poolContract.connect(bob).deposit(0, 500);
+
+      // await time.advanceBlockTo("100");
+
+      // alice rút lptoken khỏi pool
+
+      setTimeout(async () => {
+        await poolContract.connect(alice).withdraw(0, 200);
+        await poolContract.connect(bob).withdraw(0, 500);
+        // // alice có heroes token
+        console.log(await cryptoHeroesToken.balanceOf(alice.address));
+        console.log(await cryptoHeroesToken.balanceOf(bob.address));
+      }, 5000);
     });
   });
 });

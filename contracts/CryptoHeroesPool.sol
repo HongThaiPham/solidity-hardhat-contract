@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./structs/UserInfo.sol";
 import "./CryptoHeroes.sol";
 
+import "hardhat/console.sol";
+
 interface IMigratorChef {
     // Perform LP token migration from legacy UniswapV2 to SushiSwap.
     // Take the current LP token address and return the new LP token address.
@@ -143,7 +145,7 @@ contract CryptoHeroesPool is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
 
         updatePool(_pid);
-
+        console.log("deposit accCheroesPerShare: ", pool.accCheroesPerShare);
         if (pool.isNFTNeeded == true) {
             require(
                 pool.nftToken.balanceOf(address(msg.sender)) > 0,
@@ -154,6 +156,7 @@ contract CryptoHeroesPool is Ownable {
         if (user.amount > 0) {
             uint256 pending = ((user.amount * pool.accCheroesPerShare) / 1e12) -
                 user.rewardDebt;
+
             if (pending > 0) {
                 safeCheroesTransfer(msg.sender, pending);
             }
@@ -169,7 +172,7 @@ contract CryptoHeroesPool is Ownable {
         }
 
         user.rewardDebt = (user.amount * pool.accCheroesPerShare) / 1e12;
-
+        console.log("deposit rewardDebt: ", user.rewardDebt);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -222,7 +225,9 @@ contract CryptoHeroesPool is Ownable {
         if (block.number <= pool.lastRewardBlock) {
             return;
         }
+
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        console.log("updatePool: lpSupply", lpSupply);
         // pool chưa đươc deposit
         if (lpSupply == 0) {
             pool.lastRewardBlock = block.number;
@@ -230,16 +235,20 @@ contract CryptoHeroesPool is Ownable {
         }
         // số block từ lastRewardBlock đến block hiện tại
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
+        console.log("updatePool: multiplier", multiplier);
         // reward = số lượng block * số token mỗi block * số lượng phân bổ cho pool / tổng phân bổ cho các pool
         uint256 cheroesReward = (multiplier *
             cheroesPerBlock *
             pool.allocPoint) / totalAllocPoint;
 
         cheroes.mint(address(this), cheroesReward);
+
         pool.accCheroesPerShare =
             ((pool.accCheroesPerShare + cheroesReward) * 1e12) /
             lpSupply;
+
         pool.lastRewardBlock = block.number;
+        console.log("update: accCheroesPerShare ", pool.accCheroesPerShare);
     }
 
     // Safe Cheroes transfer function, just in case if rounding error causes pool to not have enough cheroes.
